@@ -1,11 +1,15 @@
 import nacl from "tweetnacl";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, Connection, Transaction, SystemProgram } from "@solana/web3.js";
 import { encryptValue } from "@inco/solana-sdk/encryption";
-// import { decrypt } from "@inco/solana-sdk/attested-decrypt"; // enable when needed
 
 export const config = {
   runtime: "nodejs"
 };
+
+const connection = new Connection(
+  process.env.SOLANA_RPC_URL,
+  "confirmed"
+);
 
 function verifySignature({ pubkey, message, signature }) {
   const pk = new PublicKey(pubkey);
@@ -16,43 +20,53 @@ function verifySignature({ pubkey, message, signature }) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
+  if (req.method !== "POST")
     return res.status(405).json({ error: "Method not allowed" });
-  }
 
   try {
     const { pubkey, action, amount, message, signature } = req.body;
 
-    if (!pubkey || !action || !amount || !message || !signature) {
+    if (!pubkey || !action || !amount || !message || !signature)
       return res.status(400).json({ error: "Missing fields" });
-    }
 
-    const ok = verifySignature({ pubkey, message, signature });
-    if (!ok) {
+    if (!verifySignature({ pubkey, message, signature }))
       return res.status(401).json({ error: "Invalid signature" });
-    }
 
-    // --- INCO PRIVACY CORE ---
-    // Encrypt amount (USDC assumed 6 decimals)
+    const user = new PublicKey(pubkey);
+
+    // 🔐 Encrypt amount (Inco)
     const encryptedAmount = await encryptValue(
       BigInt(Math.round(Number(amount) * 1e6))
     );
 
-    // TODO:
-    // - Build Solana instruction with encryptedAmount
-    // - Submit tx
-    // - Optionally decrypt handle after confirmation
+    // ⚠️ Placeholder instruction
+    // Replace programId + data with your Inco-enabled program
+    const ix = SystemProgram.transfer({
+      fromPubkey: user,
+      toPubkey: user,
+      lamports: 0
+    });
 
-    // Stub deterministic response (replace after tx wiring)
+    const tx = new Transaction().add(ix);
+    tx.feePayer = user;
+    tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+
+    // 🚫 Server cannot sign for user
+    // Tx returned for client-side signing OR relayer flow
+    const serialized = tx.serialize({
+      requireAllSignatures: false
+    }).toString("base64");
+
     return res.status(200).json({
       ok: true,
       action,
       encrypted: true,
-      balance: "0.00" // update after tx integration
+      encryptedAmount,
+      tx: serialized
     });
 
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: "Server error" });
+    res.status(500).json({ error: "Server error" });
   }
 }
