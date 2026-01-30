@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <link rel="icon" href="stablex.png" type="image/png" sizes="16x16" />
+
+  <!-- Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap -->
+  <link
+    rel="stylesheet"
+    href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
+    integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO"
+    crossorigin="anonymous"
+  />
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="luminth.css" />
+
+  <title>A smarter way to grow your stable assets. </title>
+
+  <style>
+    .loading-spinner {
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #00ff90;
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-left: 8px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+  
+</head>
+
+<body>
+<input
+  type="file"
+  id="avatarInput"
+  accept="image/*"
+  style="display:none"
+/>
+
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-dark">
+    <a class="navbar-brand d-flex align-items-center" href="/">
+      <img src="luminth2.png" style="width:40px" alt="Luminth Logo" />
+    </a>
+
+    <button id="accountBtn" class="account-btn" type="button">
+  <span id="accountLabel">Connect Wallet</span>
+</button>
+  </nav>
+
+  <!-- ACCOUNT MENU -->
+ <div id="accountMenu" class="account-menu">
+  <button id="openProfile" type="button">Profile</button>
+  <button id="openWithdraw" type="button">Withdraw</button>
+  <button id="logoutBtn" type="button">Sign out</button>
+</div>
+
+  <!-- PROFILE PANEL -->
+  <div id="profilePanel" class="profile-panel">
+    <div class="profile-header">
+      <div class="profile-avatar" id="profileAvatar">L</div>
+      <div class="profile-meta">
+        <div class="profile-email" id="profileEmail">—</div>
+        <div class="profile-network">Stable Network</div>
+      </div>
+    </div>
+
+    <div class="profile-section">
+      <span class="label">Wallet address</span>
+      <div class="address-row">
+        <span id="walletAddress">—</span>
+        <button id="copyAddress" type="button">Copy</button>
+      </div>
+    </div>
+
+    <div class="profile-section">
+      <span class="label">usdc0 balance</span>
+      <div class="balance" id="profileBalance">0.00</div>
+    </div>
+
+    <button id="profileLogout" class="profile-logout" type="button">
+      Sign out
+    </button>
+  </div>
+
+  <!-- DEPOSIT MODAL -->
+  <div id="depositOverlay" class="auth-overlay">
+    <div class="auth-modal">
+      <button class="auth-close" id="closeDeposit" type="button">&times;</button>
+
+      <h2 class="auth-title">Add funds</h2>
+      <p class="auth-subtitle">Send usdc0 to your Luminth wallet</p>
+
+      <div class="deposit-box">
+        <small>Your deposit address</small>
+        <div id="depositAddress" class="deposit-address">Loading…</div>
+      </div>
+
+      <p class="auth-footer">
+        Funds appear automatically after confirmation.
+      </p>
+    </div>
+  </div>
+  
+  <!-- INTRO -->
+  <div class="page-shell">
+  <section class="hero-wrap">
+  <div class="staking-intro">
+    <h2>
+      A smarter way to grow your Stable assets.
+    </h2>
+    <p>
+      Now you can earn automatically on Stable assets with full access at all times.
+No lockups. Just steady growth.
+    </p>
+  </div>
+</section>
+
+  <!-- STAKING CARD -->
+  <section class="staking-section">
+  <section class="staking-card">
+
+    <div class="staking-toggle">
+      <button id="stakeTab" class="tab active" type="button">Stake</button>
+<button id="unstakeTab" class="tab" type="button">Unstake</button>
+    </div>
+
+    <h2 class="staking-heading">Get sUSDC and Earn</h2>
+
+    <div class="staking-form">
+
+      <div class="form-group">
+        <label>You're Staking</label>
+        <div class="input-token">
+          <img src="stablex.png" class="token-icon" alt="USDC" />
+          <input
+            type="number"
+            id="stakeInput"
+            placeholder="0.0 USDC"
+          />
+          <span class="max-btn">Max</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>
+          To Receive <span class="slippage">0% Slippage</span>
+        </label>
+        <div class="input-token">
+          <img src="stablex.png" class="token-icon" alt="sUSDC" />
+          <input type="text" value="sUSDC" readonly />
+        </div>
+      </div>
+
+      <button class="connect-btn" id="depositButton" type="button">
+        Add funds
+      </button>
+
+      <button
+        class="stake-btn"
+        id="stakeButton"
+        type="button"
+        style="display:none"
+      >
+        <span id="stakeActionText">Stake</span>
+      </button>
+
+      <p class="conversion-rate">1 USDC ~ 1 sUSDC</p>
+      <p id="status" style="text-align:center;margin-top:.75rem"></p>
+    </div>
+    
+    <p class="conversion-rate">
+  Your sUSDC balance: <span id="sUSDCBalance">0.00</span>
+</p>
+
+  </section>
+</section>
+</div>
+  
+  <script type="module">
+import {
+  Connection,
+  PublicKey,
+  clusterApiUrl
+} from "https://esm.sh/@solana/web3.js@1.98.0";
+
+/* ================= CONFIG ================= */
+const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
+
+/* ================= STATE ================= */
+let walletPublicKey = null;
+
+/* ================= WALLET CONNECT ================= */
+async function connectWallet() {
+  if (!window.solana) {
+    alert("Install Phantom or Solflare");
+    return;
+  }
+
+  const res = await window.solana.connect();
+  walletPublicKey = res.publicKey;
+
+  document.getElementById("accountLabel").textContent =
+    walletPublicKey.toBase58().slice(0, 4) +
+    "…" +
+    walletPublicKey.toBase58().slice(-4);
+
+  await syncSolBalance();
+  await syncPrivateBalance();
+}
+
+/* ================= DISCONNECT ================= */
+async function disconnectWallet() {
+  await window.solana.disconnect();
+  walletPublicKey = null;
+
+  document.getElementById("accountLabel").textContent = "Connect Wallet";
+  document.getElementById("sUSDCBalance").textContent = "0.00";
+}
+
+/* ================= SOL BALANCE ================= */
+async function syncSolBalance() {
+  if (!walletPublicKey) return;
+
+  const lamports = await connection.getBalance(walletPublicKey);
+  console.log("SOL:", lamports / 1e9);
+}
+
+/* ================= PRIVATE BALANCE ================= */
+async function syncPrivateBalance() {
+  if (!walletPublicKey) return;
+
+  const res = await fetch("/api/balance", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ wallet: walletPublicKey.toBase58() })
+  });
+
+  const data = await res.json();
+  document.getElementById("sUSDCBalance").textContent =
+    (data.balance / 1e6).toFixed(2);
+}
+
+/* ================= DEPOSIT ================= */
+async function stakeUSDC(amount) {
+  if (!walletPublicKey) return alert("Connect wallet first");
+
+  const res = await fetch("/api/deposit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      wallet: walletPublicKey.toBase58(),
+      amount: Math.round(amount * 1e6)
+    })
+  });
+
+  const data = await res.json();
+  if (!data.ok) return alert(data.error);
+
+  await syncPrivateBalance();
+  alert("✅ USDC deposited privately");
+}
+
+/* ================= WITHDRAW ================= */
+async function unstakeUSDC(amount) {
+  if (!walletPublicKey) return alert("Connect wallet first");
+
+  const res = await fetch("/api/withdraw", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      wallet: walletPublicKey.toBase58(),
+      amount: Math.round(amount * 1e6)
+    })
+  });
+
+  const data = await res.json();
+  if (!data.ok) return alert(data.error);
+
+  await syncPrivateBalance();
+  alert("✅ USDC withdrawn");
+}
+
+/* ================= UI ================= */
+document.getElementById("accountBtn").onclick = () =>
+  walletPublicKey ? disconnectWallet() : connectWallet();
+
+document.getElementById("stakeButton").onclick = () => {
+  const amt = parseFloat(document.getElementById("stakeInput").value);
+  if (amt > 0) stakeUSDC(amt);
+};
+
+document.getElementById("unstakeTab").onclick = () => {
+  const amt = parseFloat(document.getElementById("stakeInput").value);
+  if (amt > 0) unstakeUSDC(amt);
+};
+</script>
+  
+</body>
+</html>
