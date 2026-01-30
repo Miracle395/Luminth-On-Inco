@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="stablex.png" type="image/png" sizes="16x16" />
+
+  <!-- Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+
+  <!-- Bootstrap -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" crossorigin="anonymous" />
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="luminth.css" />
+
+  <title>A smarter way to grow your stable assets.</title>
+
+  <style>
+    .loading-spinner { border:2px solid #f3f3f3; border-top:2px solid #00ff90; border-radius:50%; width:16px; height:16px; animation:spin 0.8s linear infinite; display:inline-block; vertical-align:middle; margin-left:8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+
+<body>
+<input type="file" id="avatarInput" accept="image/*" style="display:none" />
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-dark">
+  <a class="navbar-brand d-flex align-items-center" href="/"><img src="luminth2.png" style="width:40px" alt="Luminth Logo" /></a>
+  <button id="accountBtn" class="account-btn"><span id="accountLabel">Connect Wallet</span></button>
+</nav>
+
+<!-- ACCOUNT MENU -->
+<div id="accountMenu" class="account-menu">
+  <button id="openProfile">Profile</button>
+  <button id="openWithdraw">Withdraw</button>
+  <button id="logoutBtn">Sign out</button>
+</div>
+
+<!-- PROFILE PANEL -->
+<div id="profilePanel" class="profile-panel">
+  <div class="profile-header">
+    <div class="profile-avatar" id="profileAvatar">L</div>
+    <div class="profile-meta">
+      <div class="profile-email" id="profileEmail">—</div>
+      <div class="profile-network">Stable Network</div>
+    </div>
+  </div>
+  <div class="profile-section">
+    <span class="label">Wallet address</span>
+    <div class="address-row">
+      <span id="walletAddress">—</span>
+      <button id="copyAddress">Copy</button>
+    </div>
+  </div>
+  <div class="profile-section">
+    <span class="label">usdc0 balance</span>
+    <div class="balance" id="profileBalance">0.00</div>
+  </div>
+  <button id="profileLogout" class="profile-logout">Sign out</button>
+</div>
+
+<!-- DEPOSIT MODAL -->
+<div id="depositOverlay" class="auth-overlay">
+  <div class="auth-modal">
+    <button class="auth-close" id="closeDeposit">&times;</button>
+    <h2 class="auth-title">Add funds</h2>
+    <p class="auth-subtitle">Send usdc0 to your Luminth wallet</p>
+    <div class="deposit-box">
+      <small>Your deposit address</small>
+      <div id="depositAddress" class="deposit-address">Loading…</div>
+    </div>
+    <p class="auth-footer">Funds appear automatically after confirmation.</p>
+  </div>
+</div>
+
+<!-- INTRO -->
+<div class="page-shell">
+  <section class="hero-wrap">
+    <div class="staking-intro">
+      <h2>A smarter way to grow your Stable assets.</h2>
+      <p>Now you can earn automatically on Stable assets with full access at all times. No lockups. Just steady growth.</p>
+    </div>
+  </section>
+
+  <!-- STAKING CARD -->
+  <section class="staking-section">
+    <section class="staking-card">
+      <div class="staking-toggle">
+        <button id="stakeTab" class="tab active">Stake</button>
+        <button id="unstakeTab" class="tab">Unstake</button>
+      </div>
+
+      <h2 class="staking-heading">Get sUSDC and Earn</h2>
+
+      <div class="staking-form">
+        <div class="form-group">
+          <label>You're Staking</label>
+          <div class="input-token">
+            <img src="stablex.png" class="token-icon" alt="USDC" />
+            <input type="number" id="stakeInput" placeholder="0.0 USDC" />
+            <span class="max-btn">Max</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>To Receive <span class="slippage">0% Slippage</span></label>
+          <div class="input-token">
+            <img src="stablex.png" class="token-icon" alt="sUSDC" />
+            <input type="text" value="sUSDC" readonly />
+          </div>
+        </div>
+
+        <button class="connect-btn" id="depositButton">Add funds</button>
+        <button class="stake-btn" id="stakeButton" style="display:none"><span id="stakeActionText">Stake</span></button>
+
+        <p class="conversion-rate">1 USDC ~ 1 sUSDC</p>
+        <p id="status" style="text-align:center;margin-top:.75rem"></p>
+      </div>
+
+      <p class="conversion-rate">Your sUSDC balance: <span id="sUSDCBalance">0.00</span></p>
+    </section>
+  </section>
+</div>
+
+<!-- Solana Web3 -->
+<script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
+
+<!-- Inco Browser Build -->
+<script src="https://cdn.jsdelivr.net/npm/@inco/solana-sdk@latest/dist/browser.min.js"></script>
+
+<script>
+const { Connection, clusterApiUrl, PublicKey } = solanaWeb3;
+
+let walletProvider = null;
+let incoClient = null;
+let walletPublicKey = null;
+
+const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
+
+/* ================= WALLET DETECTION ================= */
+
+function waitForWallet(callback, retries = 12) {
+  if (window.backpack?.solana) {
+    console.log("🎒 Backpack detected");
+    callback(window.backpack.solana);
+  } else if (window.solana?.isPhantom) {
+    console.log("👻 Phantom detected");
+    callback(window.solana);
+  } else if (retries > 0) {
+    setTimeout(() => waitForWallet(callback, retries - 1), 300);
+  } else {
+    alert("No Solana wallet detected.");
+  }
+}
+
+/* ================= CONNECT ================= */
+
+async function connectWallet() {
+  if (!walletProvider) return alert("Wallet not ready");
+
+  const res = await walletProvider.connect({ onlyIfTrusted: false });
+
+  if (!res?.publicKey) throw new Error("No public key returned");
+
+  walletPublicKey = new PublicKey(res.publicKey.toString());
+
+  document.getElementById("accountLabel").textContent =
+    walletPublicKey.toBase58().slice(0,4) + "…" +
+    walletPublicKey.toBase58().slice(-4);
+
+  await initInco();
+  await syncBalance();
+}
+
+async function disconnectWallet() {
+  if (walletProvider?.disconnect) await walletProvider.disconnect();
+  walletPublicKey = null;
+  incoClient = null;
+
+  document.getElementById("accountLabel").textContent = "Connect Wallet";
+  document.getElementById("sUSDCBalance").textContent = "0.00";
+}
+
+/* ================= INCO ================= */
+
+async function initInco() {
+  if (!window.Inco) {
+    console.error("❌ Inco SDK not loaded");
+    alert("Inco SDK failed to load");
+    return;
+  }
+
+  incoClient = await window.Inco.createClient({
+    connection,
+    wallet: walletProvider,
+    network: "devnet"
+  });
+
+  console.log("⚡ Inco initialized");
+}
+
+/* ================= BALANCE ================= */
+
+async function syncBalance() {
+  if (!incoClient) return;
+
+  const bal = await incoClient.tokens.getBalance({
+    symbol: "USDC"
+  });
+
+  document.getElementById("sUSDCBalance").textContent =
+    (bal / 1e6).toFixed(2);
+}
+
+/* ================= ACTIONS ================= */
+
+async function stakeUSDC(amount) {
+  if (!incoClient) return alert("Connect wallet first");
+
+  await incoClient.tokens.deposit({
+    symbol: "USDC",
+    amount: Math.round(amount * 1e6)
+  });
+
+  await syncBalance();
+  alert("✅ USDC deposited privately");
+}
+
+async function unstakeUSDC(amount) {
+  if (!incoClient) return alert("Connect wallet first");
+
+  await incoClient.tokens.withdraw({
+    symbol: "USDC",
+    amount: Math.round(amount * 1e6)
+  });
+
+  await syncBalance();
+  alert("✅ USDC withdrawn");
+}
+
+/* ================= UI ================= */
+
+window.addEventListener("DOMContentLoaded", () => {
+  waitForWallet((provider) => {
+    walletProvider = provider;
+
+    document.getElementById("accountBtn").onclick = () =>
+      walletPublicKey ? disconnectWallet() : connectWallet();
+
+    document.getElementById("stakeButton").onclick = () => {
+      const amt = parseFloat(document.getElementById("stakeInput").value);
+      if (amt > 0) stakeUSDC(amt);
+    };
+
+    document.getElementById("unstakeTab").onclick = () => {
+      const amt = parseFloat(document.getElementById("stakeInput").value);
+      if (amt > 0) unstakeUSDC(amt);
+    };
+  });
+});
+</script>
+
+</body>
+</html>
