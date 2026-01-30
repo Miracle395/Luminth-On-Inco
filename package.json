@@ -1,0 +1,15 @@
+{
+  "name": "luminth-inco-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "@inco/solana-sdk": "^0.4.0",
+    "@solana/web3.js": "^1.95.4",
+    "tweetnacl": "^1.0.3"
+  }
+}
