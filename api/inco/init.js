@@ -1,21 +1,9 @@
-import nacl from "tweetnacl";
-import { Connection, PublicKey, Transaction } from "@solana/web3.js";
-import { encryptValue, createInstruction } from "@inco/solana-sdk/encryption";
+import { Connection, Transaction, PublicKey } from "@solana/web3.js";
+import { encryptValue, createClient } from "@inco/solana-sdk";
 
 export const config = { runtime: "nodejs" };
 
-// Devnet
 const connection = new Connection(process.env.SOLANA_RPC_URL, "confirmed");
-
-// Official Inco devnet program
-const INCO_PROGRAM_ID = new PublicKey("5sjEbPiqgZrYwR31ahR6Uk9wf5awoX61YGg7jExQSwaj");
-
-function verifySignature({ pubkey, message, signature }) {
-  const pk = new PublicKey(pubkey);
-  const msg = new TextEncoder().encode(message);
-  const sig = Uint8Array.from(signature);
-  return nacl.sign.detached.verify(msg, sig, pk.toBytes());
-}
 
 export default async function handler(req, res) {
   if (req.method !== "POST")
@@ -27,38 +15,31 @@ export default async function handler(req, res) {
     if (!pubkey || !action || !amount || !message || !signature)
       return res.status(400).json({ error: "Missing fields" });
 
-    if (!verifySignature({ pubkey, message, signature }))
-      return res.status(401).json({ error: "Invalid signature" });
+    const wallet = new PublicKey(pubkey);
 
-    const user = new PublicKey(pubkey);
-
-    // --- ENCRYPT AMOUNT ---
-    const encryptedAmount = await encryptValue(BigInt(Math.round(Number(amount) * 1e6)));
-
-    // --- BUILD INCO INSTRUCTION ---
-    const instruction = createInstruction({
-      programId: INCO_PROGRAM_ID,
-      user,
-      action,
-      encryptedAmount
+    // Initialize Inco client
+    const incoClient = await createClient({
+      connection,
+      network: "devnet"
     });
 
-    // --- BUILD TRANSACTION ---
-    const tx = new Transaction().add(instruction);
-    tx.feePayer = user;
-    tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+    // Encrypt the amount
+    const encryptedAmount = await encryptValue(BigInt(Math.round(Number(amount) * 1e6)));
 
-    // --- SERIALIZE TX (frontend will sign & send) ---
-    const serializedTx = tx.serialize({ requireAllSignatures: false }).toString("base64");
+    // Build transaction targeting Inco devnet program
+    const tx = await incoClient.tokens.buildTransaction({
+      wallet,
+      action, // "stake" or "unstake"
+      amount: encryptedAmount
+    });
+
+    // Serialize tx for frontend signing
+    const serialized = tx.serialize({ requireAllSignatures: false }).toString("base64");
 
     return res.status(200).json({
       ok: true,
-      action,
-      encrypted: true,
-      encryptedAmount,
-      tx: serializedTx
+      tx: serialized
     });
-
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Server error", detail: err.message });
