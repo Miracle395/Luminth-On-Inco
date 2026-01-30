@@ -1,9 +1,8 @@
 import { Connection, PublicKey } from "@solana/web3.js";
-import { getBalance } from "@inco/solana-sdk/encryption";
+import { createClient } from "@inco/solana-sdk";
 
 export const config = { runtime: "nodejs" };
 
-// Devnet connection
 const connection = new Connection(process.env.SOLANA_RPC_URL, "confirmed");
 
 export default async function handler(req, res) {
@@ -14,10 +13,16 @@ export default async function handler(req, res) {
     const { pubkey } = req.body;
     if (!pubkey) return res.status(400).json({ error: "Missing pubkey" });
 
-    const user = new PublicKey(pubkey);
+    const wallet = new PublicKey(pubkey);
 
-    // --- FETCH BALANCE VIA INCO SDK ---
-    const bal = await getBalance({ user, connection, symbol: "USDC" });
+    // Initialize Inco client
+    const incoClient = await createClient({
+      connection,
+      network: "devnet"
+    });
+
+    // Get balance
+    const bal = await incoClient.tokens.getBalance({ wallet, symbol: "USDC" });
 
     return res.status(200).json({
       ok: true,
