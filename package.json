@@ -1,0 +1,16 @@
+{
+  "name": "luminth-on-inco",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "echo 'build ok'"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.95.4",
+    "@inco/solana-sdk": "^0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3"
+  }
+}
